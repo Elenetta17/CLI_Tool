@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+
+import argparse
+import urllib
+import requests
+
+def get_breed_dict():
+    """Make a request to Dog API and return the
+    dictionnary listing all breeds"""  
+    resp = requests.get("https://dog.ceo/api/breeds/list/all").json()
+    return resp['message']
+
+def list_all():
+    """Get the dictionnary listing all breeds 
+    and tranform it into a list to make it
+    more readable"""
+    breed_dict = get_breed_dict()
+    breed_list = [key if breed_dict[key] == [] else key + ": " 
+            + str(breed_dict[key]) for key in breed_dict]
+    print(breed_list)
+    return breed_list
+
+def get_image(args):
+    """This function make a request to Dog API and saves a random image
+    of the selected breed.
+    Args: 
+    arguments provided by argparse - the breed and the destination file
+    """
+    breed, filename = args[0].lower(), args[1]  
+    breed_dict = get_breed_dict() #get the breed list to check if breed is present
+    if breed not in breed_dict:
+        print("breed not found")
+        return
+    url = "https://dog.ceo/api/breed/" + breed + "/images/random"
+    resp = requests.get(url).json()  #get url of random image of the selected breed
+    urllib.request.urlretrieve(resp['message'], filename)  #retrieve the image and save it
+    print(filename + " saved")
+    
+def main():
+    """This function creates the parsers needed to read the command line
+    and parse the line
+    """
+    global_parser = argparse.ArgumentParser(
+        prog="Dog API",
+        description="""CLI to List all dog breeds on https://dog.ceo/dog-api/ and 
+        download an image of a specific breed""")
+    subparsers = global_parser.add_subparsers()
+    
+    # list-all parser
+    list_all_parser = subparsers.add_parser(
+        "list-all", 
+        help="List all breeds"
+        )
+    list_all_parser.set_defaults(func=list_all)
+    
+    # get-image parser
+    image_parser = subparsers.add_parser(
+        "get-image",
+        help="Retrieve and save the image of a specific breed"
+        )
+    image_parser.add_argument(
+        "--breed",
+        dest="input",
+        action="append",
+        help="Specific breed"
+        )
+    image_parser.add_argument(
+        "--file",
+        dest="input",
+        action="append",
+        help ="Destination file")
+    image_parser.set_defaults(func=get_image)
+    
+    
+    args= global_parser.parse_args()
+    if hasattr(args, 'input'):
+        args.func(args.input)
+    else:
+        args.func()
+
+main()
+
